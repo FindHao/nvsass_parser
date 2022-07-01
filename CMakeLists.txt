@@ -20,10 +20,15 @@ aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/  nvsass_parser_src)
 aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/protoc/ nvsass_parser_protoc)
 
 
-add_executable(nvsass_parser ${nvsass_parser_src} ${nvsass_parser_protoc})
+add_executable(nvsass_parser_test ${nvsass_parser_src} ${nvsass_parser_protoc})
 
-target_link_libraries(nvsass_parser
+target_link_libraries(nvsass_parser_test PUBLIC
         -lprotobuf
-)
+        )
 
 
+#add_library(nvsass_parser ${nvsass_parser_src} ${nvsass_parser_protoc})
+#
+#target_link_libraries(nvsass_parser PUBLIC
+#        -lprotobuf
+#)
