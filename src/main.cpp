@@ -259,8 +259,14 @@ void searchOffset_protobuf(kernel::mapRes::FuncInfo FI, int search_offset) {
 
             reg_GPR = SI.reg_gpr();
             if ((reg_GPR.reg_status()[reg_write] & 0x2) == 0x2) { // 2 -> 读 v, 3 -> 读+写 x     // & 0x2
-                found = true;
-                break;  // find the read line
+                vector<string> cur_code = splitCode(SI.code());
+                if (cur_code[0] == "MOV") {
+                    get_reg = vec_code[1]; // MOV R6, R2 的 R6
+                    reg_write = atoi(get_reg.substr(1).c_str());
+                } else {
+                    found = true;
+                    break;  // find the read line
+                }
             }
         }
 
