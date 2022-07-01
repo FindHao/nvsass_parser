@@ -1,0 +1,40 @@
+syntax = "proto2";
+package kernel;
+
+message mapRes {
+
+	map<string, FuncInfo> testMap = 1;
+
+	message FuncInfo {
+	    required string funcname = 1;
+        repeated string srcFileSet = 2;
+        repeated string codeSet = 3;
+        map<uint64, SASSLineInfo> map_offset_src = 4;
+
+	    message SASSLineInfo {
+            required string src_path = 1;
+            required uint64 src_line = 2;
+            required string code = 3;
+
+	        message Register {
+                optional string name = 1;
+                optional uint64 size = 2;
+                optional uint64 occupied_count = 3;
+                repeated uint64 reg_status = 4;
+	        }
+
+	        optional Register reg_GPR = 4;
+            optional Register reg_PRED = 5;
+            optional Register reg_UGPR = 6;
+            optional Register reg_UPRED = 7;
+	    }
+
+	    repeated SASSLineInfo SASSLine = 5;
+	    optional uint64 reg_GPR_size = 6;
+        optional uint64 reg_PRED_size = 7;
+        optional uint64 reg_UGPR_size = 8;
+        optional uint64 reg_UPRED_size = 9;
+	}
+
+	repeated FuncInfo FI = 2;
+}
