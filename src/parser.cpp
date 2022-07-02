@@ -6,7 +6,7 @@ using namespace std;
 
 map<string, FuncInfo> map_FuncInfos;
 
-void init(string path) {
+void init(string &path) {
     map_FuncInfos = mapOffset(path);
 }
 
@@ -19,7 +19,7 @@ void regUsageParse(const string &str_REG, Register &reg, const string &funcName,
     } else {
         // get the number of registers used
         int index = str_REG.find(' ') - 1;
-        reg.occupied_count = atoi(str_REG.substr(0, index + 1).c_str());
+        reg.occupied_count = strtol(str_REG.substr(0, index + 1).c_str(), nullptr, 10);
         //cout << "GPR occupied_count: " << reg.occupied_count << endl;
         for (int i = 0; i < reg.size; i++) {
             index = index + 1 + to_string(i).size();
@@ -50,7 +50,7 @@ void regUsageParse(const string &str_REG, Register &reg, const string &funcName,
 
 }
 
-map<string, FuncInfo> mapOffset(string dataPath) {
+map<string, FuncInfo> mapOffset(string &dataPath) {
 
     string tempStr;
     ifstream myfile;
@@ -82,19 +82,19 @@ map<string, FuncInfo> mapOffset(string dataPath) {
         tempStr.erase(0, tempStr.find_first_not_of(" \t"));
         if (tempStr[0] == '.')
             continue;
-        // source code path and line number
-        if (tempStr[1] == '*' && tempStr[0] == '/') {
+        if (tempStr[0] == '/' && tempStr[1] == '*') {
+            // sass code line
             FI->addSrcFile(filePath);
             int offset = hexToInt(tempStr.substr(2, tempStr.find("*/") - 2));
             //@Yueming Hao TODO: get rid of all the erase()
             // earse everything before assembly code
-            tempStr.erase(0, tempStr.find_first_of(" "));
-            tempStr.erase(0, tempStr.find_first_not_of(" "));
-            string code = tempStr.substr(0, tempStr.find_first_of(";"));
+            tempStr.erase(0, tempStr.find_first_of(' '));
+            tempStr.erase(0, tempStr.find_first_not_of(' '));
+            string code = tempStr.substr(0, tempStr.find_first_of(';'));
             // erase everything before register part
             tempStr.erase(0, tempStr.find_first_of("//"));
-            tempStr.erase(0, tempStr.find_first_of("|") + 1);
-            tempStr.erase(0, tempStr.find_first_not_of(" "));
+            tempStr.erase(0, tempStr.find_first_of('|') + 1);
+            tempStr.erase(0, tempStr.find_first_not_of(' '));
             // construct register
             auto *reg_GPR = new Register();
             reg_GPR->size = reg_GPR_size;
@@ -109,98 +109,74 @@ map<string, FuncInfo> mapOffset(string dataPath) {
             reg_UPRED->size = reg_UPRED_size;
             reg_UPRED->name = "UPRED";
 
-            string str_GPR = tempStr.substr(0, tempStr.find_first_of("|"));
-            tempStr.erase(0, tempStr.find_first_of("|") + 1);
-            tempStr.erase(0, tempStr.find_first_not_of(" "));
+            string str_GPR = tempStr.substr(0, tempStr.find_first_of('|'));
+            tempStr.erase(0, tempStr.find_first_of('|') + 1);
+            tempStr.erase(0, tempStr.find_first_not_of(' '));
 
-            string str_PRED = tempStr.substr(0, tempStr.find_first_of("|"));
-            tempStr.erase(0, tempStr.find_first_of("|") + 1);
-            tempStr.erase(0, tempStr.find_first_not_of(" "));
+            string str_PRED = tempStr.substr(0, tempStr.find_first_of('|'));
+            tempStr.erase(0, tempStr.find_first_of('|') + 1);
+            tempStr.erase(0, tempStr.find_first_not_of(' '));
 
-            string str_UGPR = "";
-            string str_UPRED = "";
-            int tempPos = tempStr.find_first_of("|");
+            string str_UGPR;
+            string str_UPRED;
+            int tempPos = tempStr.find_first_of('|');
             if (tempPos != tempStr.npos) {
                 str_UGPR = tempStr.substr(0, tempPos);
                 tempStr.erase(0, tempPos + 1);
-                tempStr.erase(0, tempStr.find_first_not_of(" "));
+                tempStr.erase(0, tempStr.find_first_not_of(' '));
 
-                tempPos = tempStr.find_first_of("|");
+                tempPos = tempStr.find_first_of('|');
                 if (tempPos != tempStr.npos) {
-                    str_UPRED = tempStr.substr(0, tempStr.find_first_of("|"));
+                    str_UPRED = tempStr.substr(0, tempStr.find_first_of('|'));
                 }
             }
             regUsageParse(str_GPR, *reg_GPR, FI->getFuncName(), offset, code);
             regUsageParse(str_PRED, *reg_PRED, FI->getFuncName(), offset, code);
             regUsageParse(str_UGPR, *reg_UGPR, FI->getFuncName(), offset, code);
             regUsageParse(str_UPRED, *reg_UPRED, FI->getFuncName(), offset, code);
-
-            //  add to the object
             FI->addOffsetSrc(offset, filePath, fileLine, code, reg_GPR, reg_PRED, reg_UGPR, reg_UPRED);
-
-            continue;
-
         } else if (tempStr[2] == '-') {
-            // match function name
-//            vector<string> function_name = getMatch("//-+ \\.text\\.(.*) -+", tempStr);
-//            if (!function_name.empty()) {   // match 到 function 了
-//            }
-
+//            mangled kernel name
             if (FI != nullptr) {
-                //vec_FuncInfos.push_back(*FI);
                 if (map_FuncInfos.find(FI->getFuncName()) != map_FuncInfos.end())
                     cout << "ERROR: Kernel Exists!" << endl;
                 map_FuncInfos.insert(pair<string, FuncInfo>(FI->getFuncName(), *FI));
                 //cout << "test: " << map_FuncInfos[FI->getFuncName()].getFuncName() << endl;
             }
-
-            tempStr.erase(0, tempStr.find_first_of("."));
+            tempStr.erase(0, tempStr.find_first_of('.'));
             string kernel_str = tempStr.substr(6, tempStr.find_first_of(" ---") - 6);
-            FuncInfo *tempObj = new FuncInfo(kernel_str);  // 改存 stack 为 heap
+            FuncInfo *tempObj = new FuncInfo(kernel_str);
             FI = tempObj;
             filePath = "no src file";
             fileLine = "-1";
-
             reg_GPR_size = -1;
             reg_PRED_size = -1;
             reg_UGPR_size = -1;
             reg_UPRED_size = -1;
-            //FI->addSrcFile(filePath, fileLine);       //报139错
-
             //cout << "Create: " << FI->getFuncName() << endl;
-            continue;
-
-        } else if (tempStr[2] == '#' && tempStr[1] == '/') {
-            // match src file and corresponding line
-            tempStr.erase(0, tempStr.find_first_of("\"") + 1);
-            filePath = tempStr.substr(0, tempStr.find_first_of("\""));
-
+        } else if (tempStr[1] == '/' && tempStr[2] == '#') {
+            // source code file and line number
+            tempStr.erase(0, tempStr.find_first_of('\"') + 1);
+            filePath = tempStr.substr(0, tempStr.find_first_of('\"'));
             tempStr.erase(0, tempStr.find(", line") + 6);
-            tempStr.erase(0, tempStr.find_first_not_of(" "));
-            fileLine = tempStr.substr(0, tempStr.find_first_of(" "));
-
+            tempStr.erase(0, tempStr.find_first_not_of(' '));
+            fileLine = tempStr.substr(0, tempStr.find_first_of(' '));
 //            cout << "   Source File    Name: " << filePath << "       Line: " << fileLine << endl;
             FI->addSrcFile(filePath);
-
-            continue;
-        } else if (tempStr.find("#") != tempStr.npos && tempStr.find("// |") != tempStr.npos) {
+        } else if (tempStr.find('#') != tempStr.npos && tempStr.find("// |") != tempStr.npos) {
             // count each register
-
-            tempStr.erase(0, tempStr.find_first_of("#") + 1);
-            reg_GPR_size = regCount(tempStr.substr(0, tempStr.find_first_of("|")));
-
-            tempStr.erase(0, tempStr.find_first_of("#") + 1);
-            reg_PRED_size = regCount(tempStr.substr(0, tempStr.find_first_of("|")));
-
-            int tempPos = tempStr.find_first_of("#");
+            tempStr.erase(0, tempStr.find_first_of('#') + 1);
+            reg_GPR_size = regCount(tempStr.substr(0, tempStr.find_first_of('|')));
+            tempStr.erase(0, tempStr.find_first_of('#') + 1);
+            reg_PRED_size = regCount(tempStr.substr(0, tempStr.find_first_of('|')));
+            int tempPos = tempStr.find_first_of('#');
             if (tempPos != tempStr.npos) {
                 tempStr.erase(0, tempPos + 1);
-                reg_UGPR_size = regCount(tempStr.substr(0, tempStr.find_first_of("|")));
-
-                tempPos = tempStr.find_first_of("#");
+                reg_UGPR_size = regCount(tempStr.substr(0, tempStr.find_first_of('|')));
+                tempPos = tempStr.find_first_of('#');
                 if (tempPos != tempStr.npos) {
-                    tempStr.erase(0, tempStr.find_first_of("#") + 1);
-                    reg_UPRED_size = regCount(tempStr.substr(0, tempStr.find_first_of("|")));
+                    tempStr.erase(0, tempStr.find_first_of('#') + 1);
+                    reg_UPRED_size = regCount(tempStr.substr(0, tempStr.find_first_of('|')));
                 } else {
                     reg_UPRED_size = 0;
                 }
@@ -211,49 +187,16 @@ map<string, FuncInfo> mapOffset(string dataPath) {
             //cout << "reg_PRED_size: " << reg_PRED_size << endl;
             //cout << "reg_UGPR_size: " << reg_UGPR_size << endl;
             //cout << "reg_UPRED_size: " << reg_UPRED_size << endl;
-
         } else {
-            // match src file and corresponding line
-//            vector<string> src_file = getMatch("(\\t*)\\/\\/## File \"(.*)\", line ([0-9]*)(.*)", tempStr);     //补上 else 排除
-//            if (!src_file.empty()) {
-//                filePath = src_file[1];
-//                fileLine = src_file[2];
-//                cout << "   Source File    Name: " << filePath << "       Line: " << fileLine << endl;
-//                FI->addSrcFile(filePath, fileLine);
-//
-//                continue;
-//            }
 
-
-
-
-            // count each register          // 写进function的else
-//            vector<string> reg_count = getMatch("(.*)\\/\\/ \\|\\s*#(.*)\\s+\\|\\s*#(.*)\\s+\\|\\s*#(.*)\\s+\\|\\s*#(.*)\\s+\\|", tempStr);
-//            if (!reg_count.empty()) {
-//                reg_GPR_size = regCount(reg_count[1]);
-//                //cout << "reg_GPR_size: " << reg_GPR_size << endl;
-//                reg_PRED_size = regCount(reg_count[2]);
-//                //cout << "reg_PRED_size: " << reg_PRED_size << endl;
-//                reg_UGPR_size = regCount(reg_count[3]);
-//                //cout << "reg_UGPR_size: " << reg_UGPR_size << endl;
-//                reg_UPRED_size = regCount(reg_count[4]);
-//                //cout << "reg_UPRED_size: " << reg_UPRED_size << endl;
-//
-//                continue;
-//            }
         }
 
     }
-
     if (FI != nullptr) {
-        //vec_FuncInfos.push_back(*FI);
         map_FuncInfos.insert(pair<string, FuncInfo>(FI->getFuncName(), *FI));
     }
-
-
     myfile.close();
     fclose(fp);
-
     return map_FuncInfos;
 }
 

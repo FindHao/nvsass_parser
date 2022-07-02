@@ -8,7 +8,8 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
 
-    init("../data/castro1.txt");
+    string path ("../data/castro1.txt");
+    init(path);
     cout << "Test Name: " << map_FuncInfos.begin()->second.getFuncName() << endl;
 //    cout << "__cuda_sm20_div_f64_slowpath_v2: " << map_FuncInfos["__cuda_sm20_div_f64_slowpath_v2"].searchOffset(0).src_line << endl;
 
