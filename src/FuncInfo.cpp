@@ -218,7 +218,7 @@ void FuncInfo::printOffset() {
         cout << "   Code: " << *iter->second.code << endl;
 
         cout << "   GPR status: ";
-        vector<int> reg_status = iter->second.reg_GPR->reg_status;
+        vector<RegisterStatus> reg_status = iter->second.reg_GPR->reg_status;
         for (int i = 0; i < reg_status.size(); i++) {
             switch (reg_status[i]) {
                 case 0:
