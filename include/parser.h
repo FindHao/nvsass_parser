@@ -5,7 +5,7 @@
 #include "FuncInfo.h"
 #include "helpFunc.h"
 #include "mapRes.pb.h"
-#include "DataType.h"
+#include "ArrayType.h"
 
 using namespace std;
 
@@ -19,7 +19,7 @@ google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string serializedS
 
 string encode(map<string, FuncInfo> map_FI);
 
-void searchOffset_protobuf(kernel::mapRes::FuncInfo FI, int search_offset);
+void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset);
 
 void regUsageParse(string &str_REG, Register &reg, string &funcName, int offset, string &sass_code);
 

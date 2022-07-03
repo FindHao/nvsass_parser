@@ -8,7 +8,7 @@ using namespace std;
 
 int hexToInt(string str);
 
-vector<string> splitCode(string code);
+vector<string> splitCode(string &code);
 void searchOffset(FuncInfo FI, int search_offset);
 int regCount(string numStr);
 bool ifContainsWide(string code);
@@ -35,6 +35,7 @@ const vector<string> AssembFunc = {
         "ISETP",
         "ICMP",
         "POPC",
+        "INT_END",
 //      the following are FP32 instructions
         "FFMA",
         "FADD",
@@ -46,6 +47,7 @@ const vector<string> AssembFunc = {
         "FSETP",
         "FCHK",
         "RRO",
+        "FP32_END",
 //      the following are FP64 instructions
         "MUFU",
         "DFMA",
@@ -53,7 +55,8 @@ const vector<string> AssembFunc = {
         "DMUL",
         "DMNMX",
         "DSET",
-        "DSETP"
+        "DSETP",
+        "FP64_END",
 };
 
 

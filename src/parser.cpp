@@ -2,12 +2,19 @@
 #include <sstream>
 #include <cstdio>
 
-using namespace std;
 
 map<string, FuncInfo> map_FuncInfos;
 
+//The reference positions for the instructions in helpFunc.h
+int FP32_END;
+int FP64_END;
+int INT_END;
+
 void init(string &path) {
     map_FuncInfos = mapOffset(path);
+    INT_END = find(AssembFunc.begin(), AssembFunc.end(), "INT_END") - AssembFunc.begin();
+    FP32_END = find(AssembFunc.begin(), AssembFunc.end(), "FP32_END") - AssembFunc.begin();
+    FP64_END = find(AssembFunc.begin(), AssembFunc.end(), "FP64_END") - AssembFunc.begin();
 }
 
 void regUsageParse(const string &str_REG, Register &reg, const string &funcName, int offset, const string &sass_code) {
@@ -270,155 +277,111 @@ google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string serializedS
     return deserializedMapRes.testmap();
 }
 
-void searchOffset_protobuf(kernel::mapRes::FuncInfo FI, int search_offset) {
-    DataType resType;
-    kernel::mapRes::FuncInfo::SASSLineInfo SI;
-    auto iter = FI.map_offset_src().find(search_offset);
-    if (iter == FI.map_offset_src().end()) {
+ArrayType getArrayType(string& search_str){
+    ArrayType array_type{};
+    auto iter = std::find(AssembFunc.begin(), AssembFunc.end(), search_str);
+    if (iter != AssembFunc.end()) {
+        int index = distance(AssembFunc.begin(), iter);     // iter - begin
+        if (index > FP32_END) {
+            array_type.data_type = DATA_FLOAT;
+            array_type.unit_size = 8;
+        } else if (index < FP32_END && index >= INT_END) {
+            array_type.data_type = DATA_FLOAT;
+            array_type.unit_size = 4;
+        } else {
+//            @TODO: chceck modifers
+            array_type.data_type = DATA_INT;
+            array_type.unit_size = 4;
+        }
+    } else {
+        cout << "ERROR: Not found this function in the set." << endl;
+        exit(-1);
+    }
+    return array_type;
+}
+
+void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset) {
+    ArrayType resType{};
+    kernel::mapRes::FuncInfo::SASSLineInfo sassline;
+    auto iter = funcinfo.map_offset_src().find(search_offset);
+    if (iter == funcinfo.map_offset_src().end()) {
         cout << "ERROR: Not exists this offset" << endl;
         exit(0);
     }
-    SI = iter->second;
+    sassline = iter->second;
 
-    kernel::mapRes::FuncInfo::SASSLineInfo::Register reg_GPR = SI.reg_gpr();
-    string code = SI.code();
+    kernel::mapRes::FuncInfo::SASSLineInfo::Register reg_GPR = sassline.reg_gpr();
+    string code = sassline.code();
     //cout << code << endl << endl;
     vector<string> vec_code = splitCode(code);
-
-    string funcType = splitFuncType(vec_code[0]);   // split by '.',  get the "LDG" from "LDG.E.64"
-    if (funcType == "LDG" ||
-        funcType == "LD") {   // Load         // 改成 "LDG" 在不在 string 里    // 已知 offset       // store  "ST"
+    //// split by '.',  get the "LDG" from "LDG.E.64"
+    string funcType = splitFuncType(vec_code[0]);
+    if (funcType == "LDG" || funcType == "LD") {
         cout << endl << "Load：" << endl;
-
-        // find which reg is used (writen)
-        string get_reg = vec_code[1]; // "LDG.E.64 R8, [R16.64] ;" 中的 "R8"
+        // find which reg is used (writen). example: "LDG.E.64 R8, [R16.64] ;" 中的 "R8"
+        string get_reg = vec_code[1];
         int reg_write = atoi(get_reg.substr(1).c_str());
         if (reg_write < 0 || reg_write >= reg_GPR.size()) {
             cout << "ERROR: Index of LDG wrong." << endl;
         }
 
-//        int reg_write = -1;
-//        for (int i = 0; i < reg_GPR->reg_status.size(); i++) {
-//            if ((reg_GPR->reg_status[i] & 0x1) == 0x1) { // 1 -> 写 ^, 3 -> 读+写 x     // reg_GPR.reg_status[i] & 0x1  // 增加 map<1, reg4> 两者都用
-//                reg_write = i;
-//                break;
-//            }
-//        }
-//
-//        // if reg_write == -1  error
-//        if (reg_write == -1) {
-//            cout << "ERROR: Not found any register is writen after loading the data." << endl;
-//        }
-
-
-
         // find where this reg is used (read)
         bool found = false;
         for (search_offset += 0x10;
-             search_offset <= (FI.map_offset_src().size() - 1) * 0x10; search_offset += 0x10) { // 16 -> 0x10
-            auto iter1 = FI.map_offset_src().find(search_offset);
-            if (iter1 == FI.map_offset_src().end()) {
+             search_offset <= (funcinfo.map_offset_src().size() - 1) * 0x10; search_offset += 0x10) {
+            auto iter1 = funcinfo.map_offset_src().find(search_offset);
+            if (iter1 == funcinfo.map_offset_src().end()) {
                 cout << "ERROR: Not exists this offset" << endl;
                 exit(0);
             }
-            SI = iter1->second;
-
-            reg_GPR = SI.reg_gpr();
-            if ((reg_GPR.reg_status()[reg_write] & 0x2) == 0x2) { // 2 -> 读 v, 3 -> 读+写 x     // & 0x2
+            sassline = iter1->second;
+            reg_GPR = sassline.reg_gpr();
+            auto cur_reg_status =  reg_GPR.reg_status()[reg_write];
+            if ( cur_reg_status & REG_LOAD || cur_reg_status & REG_LOAD_STORE) {
                 found = true;
-                break;  // find the read line
+                break;
             }
         }
-
-        // if 没找到  error
         if (!found) {
             cout << "ERROR: Not found where the register just written is read after loading process." << endl;
         }
-
-        code = SI.code();
+        code = sassline.code();
         vec_code = splitCode(code);
-
-
-        // enum / map
-        auto iter = std::find(AssembFunc.begin(), AssembFunc.end(), splitFuncType(vec_code[0]));
-        if (iter != AssembFunc.end()) {
-            int index = distance(AssembFunc.begin(), iter);     // iter - begin
-            cout << "index: " << index << endl;
-            if (index >= 28) {
-                cout << "Type is FP64"
-                     << endl;        // 类型建structure  1. char type  0-> int  1-> float  2. 几bit的类型 32-> FP32  16-> FP64      返回这个结构体
-            } else if (index < 28 && index >= 18) {
-                cout << "Type is FP32" << endl;
-            } else { // index < 18
-                cout << "Type is INT" << endl;
-            }
-        } else {
-            // error
-            cout << "ERROR: Not found this function in the set." << endl;
-        }
-
+        string tmp = splitFuncType(vec_code[0]);
+        resType = getArrayType(tmp);
     } else if (funcType == "STG" || funcType == "ST") {    // Store
         cout << endl << "Store：" << endl;
-
         // find which reg is used (read)
-        string get_reg = vec_code[2];  // "STG.E.64 [R14.64], R8;" 的 R8
+        string get_reg = vec_code[2];  // "STG.E.64 [R14.64], R8;" R8
         int reg_getData = atoi(get_reg.substr(1).c_str());
         if (reg_getData < 0 || reg_getData >= reg_GPR.size()) {
             cout << "ERROR: Index of STG wrong." << endl;
         }
-
         // find when this reg is written
         bool found = false;
         for (search_offset -= 0x10; search_offset >= 0x00; search_offset -= 0x10) { // 16 -> 0x10
-            auto iter1 = FI.map_offset_src().find(search_offset);
-            if (iter1 == FI.map_offset_src().end()) {
+            auto iter1 = funcinfo.map_offset_src().find(search_offset);
+            if (iter1 == funcinfo.map_offset_src().end()) {
                 cout << "ERROR: Not exists this offset" << endl;
                 exit(0);
             }
-            SI = iter1->second;
-
-            reg_GPR = SI.reg_gpr();
-            if ((reg_GPR.reg_status()[reg_getData] & 0x1) == 0x1) { // 1 -> 写 ^, 3 -> 读+写 x
+            sassline = iter1->second;
+            reg_GPR = sassline.reg_gpr();
+            if (reg_GPR.reg_status()[reg_getData] & REG_STORE) { // 1 -> 写 ^, 3 -> 读+写 x
                 found = true;
-                break;  // find the read line
+                break;
             }
         }
-
-        // if 没找到  error
         if (!found) {
             cout << "ERROR: Not found where the register just read is written before storing process." << endl;
         }
-
-        code = SI.code();
+        code = sassline.code();
         vec_code = splitCode(code);
-
-        auto iter = std::find(AssembFunc.begin(), AssembFunc.end(), splitFuncType(vec_code[0]));
-        if (iter != AssembFunc.end()) {
-            int index = distance(AssembFunc.begin(), iter);     // iter - begin
-            cout << "index: " << index << endl;
-            if (index >= 28) {
-                cout << "Type is FP64"
-                     << endl;        // 类型建structure  1. char type  0-> int  1-> float  2. 几bit的类型 32-> FP32  16-> FP64      返回这个结构体
-                resType.type = 1;
-                resType.version = 64;
-            } else if (index < 28 && index >= 18) {
-                cout << "Type is FP32" << endl;
-                resType.type = 1;
-                resType.version = 32;
-            } else { // index < 18
-                cout << "Type is INT" << endl;
-                resType.type = 0;
-                resType.version = 0;
-            }
-        } else {
-            // error
-            cout << "ERROR: Not found this function in the set." << endl;
-        }
+        string tmp = splitFuncType(vec_code[0]);
+        resType = getArrayType(tmp);
     } else {
         cout << "Not LD/LDG/ST/STG" << endl;
     }
-
-    cout << "===============================================" << endl;
 }
 
 
