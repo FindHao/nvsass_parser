@@ -2,6 +2,12 @@
 #include <sstream>
 #include <cstdio>
 
+using std::to_string;
+using std::ifstream;
+using std::cout;
+using std::endl;
+using std::pair;
+using std::cerr;
 
 map<string, FuncInfo> map_FuncInfos;
 
@@ -300,6 +306,7 @@ ArrayType getArrayType(string& search_str){
     return array_type;
 }
 
+// @TODO: add return value
 void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset) {
     ArrayType resType{};
     kernel::mapRes::FuncInfo::SASSLineInfo sassline;

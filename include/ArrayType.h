@@ -4,7 +4,6 @@
 #include <string>
 #include <map>
 
-using namespace std;
 
 typedef enum DataType {
     DATA_UNKNOWN = 0,

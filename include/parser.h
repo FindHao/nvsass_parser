@@ -7,7 +7,6 @@
 #include "mapRes.pb.h"
 #include "ArrayType.h"
 
-using namespace std;
 
 extern map<string, FuncInfo> map_FuncInfos;
 

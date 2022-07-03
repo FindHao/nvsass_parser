@@ -6,7 +6,6 @@
 #include <cstring>
 #include <algorithm>
 
-using namespace std;
 
 int hexToInt(string str);
 

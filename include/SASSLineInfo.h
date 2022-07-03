@@ -5,7 +5,7 @@
 #include <set>
 #include "Register.h"
 
-using namespace std;
+using std::set;
 
 struct SASSLineInfo {
     set<string>::iterator src_path;

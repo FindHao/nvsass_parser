@@ -3,8 +3,9 @@
 #include <sstream>
 #include <vector>
 
-using namespace std;
-
+using std::cout;
+using std::endl;
+using std::stringstream;
 
 int hexToInt(string str) {
     int len = str.size();
