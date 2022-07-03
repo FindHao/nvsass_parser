@@ -36,7 +36,9 @@ set<string> FuncInfo::getCodeSet() {
     return this->codeSet;
 }
 
-void FuncInfo::addOffsetSrc(int offset, string filePath, string line, string code, Register *reg_GPR, Register *reg_PRED, Register *reg_UGPR, Register *reg_UPRED) {
+void
+FuncInfo::addOffsetSrc(int offset, string filePath, string line, string code, Register *reg_GPR, Register *reg_PRED,
+                       Register *reg_UGPR, Register *reg_UPRED) {
 
     this->codeSet.insert(code); // 找找直接返回指针的 set 函数
 
@@ -172,27 +174,20 @@ SASSLineInfo FuncInfo::searchOffset(int offset) {
 }
 
 
-
-
-
 // set Register
 void FuncInfo::setRegister(string regName, int regSize) {
     if (regName == "GPR") {
         this->reg_GPR_size = regSize;
-    } else if (regName == "PRED"){
+    } else if (regName == "PRED") {
         this->reg_PRED_size = regSize;
-    } else if (regName == "UGPR"){
+    } else if (regName == "UGPR") {
         this->reg_UGPR_size = regSize;
-    } else if (regName == "UPRED"){
+    } else if (regName == "UPRED") {
         this->reg_UPRED_size = regSize;
     } else {
         cout << "No Such Register" << endl;
     }
 }
-
-
-
-
 
 
 // Print

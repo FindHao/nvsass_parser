@@ -22,22 +22,27 @@ private:
     int reg_UPRED_size;
 public:
     FuncInfo();
+
     FuncInfo(string funcName);
 
 
     // function name
     void setFuncName(string funcName);
+
     string getFuncName();
 
     // SrcFile
     void addSrcFile(string filePath);
+
     set<string> getSrcFile();
 
     // code set
     set<string> getCodeSet();
 
     // map offset and filePath, line, code
-    void addOffsetSrc(int offset, string filePath, string line, string code, Register *reg_GPR, Register *reg_PRED, Register *reg_UGPR, Register *reg_UPRED);
+    void addOffsetSrc(int offset, string filePath, string line, string code, Register *reg_GPR, Register *reg_PRED,
+                      Register *reg_UGPR, Register *reg_UPRED);
+
     map<int, struct SASSLineInfo> getOffsetSrc();
 
     SASSLineInfo searchOffset(int offset);
@@ -47,6 +52,7 @@ public:
 
     // Print
     void printSrcFile();
+
     void printOffset();
 };
 

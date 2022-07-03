@@ -21,11 +21,11 @@ int main(int argc, char *argv[]) {
 /*----------------上面是序列化，下面是反序列化-----------------------*/
     ifstream IsRead;
     IsRead.open("store.txt");
-    string strToDecode = "";
+
 //    auto ss = std::ostringstream();
     ostringstream ss;
     ss << IsRead.rdbuf();
-    strToDecode = ss.str();
+    string strToDecode = ss.str();
 
     auto temp_map = decode(strToDecode);
     searchOffset_protobuf(temp_map["_ZN3cub11EmptyKernelIvEEvv"], 0);

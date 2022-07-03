@@ -5,7 +5,7 @@
 #include <map>
 
 using namespace std;
-enum RegisterStatus{
+enum RegisterStatus {
     REG_UNUSED = 0,
     REG_STORE,
     REG_LOAD,

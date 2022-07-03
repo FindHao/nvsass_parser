@@ -7,7 +7,7 @@
 
 using namespace std;
 
-struct SASSLineInfo{
+struct SASSLineInfo {
     set<string>::iterator src_path;
     int src_line;
     set<string>::iterator code;

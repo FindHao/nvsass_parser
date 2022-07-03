@@ -267,7 +267,7 @@ string encode(map<string, FuncInfo> map_FI) {
 }
 
 //@TODO: do we need to change Map to std::map?
-google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string serializedStr) {
+google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string &serializedStr) {
     kernel::mapRes deserializedMapRes;
     if (!deserializedMapRes.ParseFromString(serializedStr)) {
         cerr << "Failed to parse maps." << endl;

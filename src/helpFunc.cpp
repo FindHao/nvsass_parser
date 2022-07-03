@@ -50,11 +50,12 @@ vector<string> splitCode(string &code) {
 
     return vec_code;
 }
+
 // 计算reg个数的辅助函数
 int regCount(string numStr) {
     stringstream input(numStr);
     string num;
-    while (input>>num)
+    while (input >> num)
         continue;
 
     return atoi(num.c_str()) + 1;
