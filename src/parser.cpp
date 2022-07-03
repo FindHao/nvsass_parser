@@ -65,7 +65,7 @@ map<string, FuncInfo> mapOffset(string &dataPath) {
     FILE *fp;
     fp = fopen(dataPath.c_str(), "r");
     // Analyze line by line
-    FuncInfo *FI = nullptr;
+    FuncInfo *funcinfo = nullptr;
 
     string filePath = "no src file";
     string fileLine = "-1";
@@ -84,7 +84,7 @@ map<string, FuncInfo> mapOffset(string &dataPath) {
             continue;
         if (tempStr[0] == '/' && tempStr[1] == '*') {
             // sass code line
-            FI->addSrcFile(filePath);
+            funcinfo->addSrcFile(filePath);
             int offset = hexToInt(tempStr.substr(2, tempStr.find("*/") - 2));
             //@Yueming Hao TODO: get rid of all the erase()
             // earse everything before assembly code
@@ -130,30 +130,30 @@ map<string, FuncInfo> mapOffset(string &dataPath) {
                     str_UPRED = tempStr.substr(0, tempStr.find_first_of('|'));
                 }
             }
-            regUsageParse(str_GPR, *reg_GPR, FI->getFuncName(), offset, code);
-            regUsageParse(str_PRED, *reg_PRED, FI->getFuncName(), offset, code);
-            regUsageParse(str_UGPR, *reg_UGPR, FI->getFuncName(), offset, code);
-            regUsageParse(str_UPRED, *reg_UPRED, FI->getFuncName(), offset, code);
-            FI->addOffsetSrc(offset, filePath, fileLine, code, reg_GPR, reg_PRED, reg_UGPR, reg_UPRED);
+            regUsageParse(str_GPR, *reg_GPR, funcinfo->getFuncName(), offset, code);
+            regUsageParse(str_PRED, *reg_PRED, funcinfo->getFuncName(), offset, code);
+            regUsageParse(str_UGPR, *reg_UGPR, funcinfo->getFuncName(), offset, code);
+            regUsageParse(str_UPRED, *reg_UPRED, funcinfo->getFuncName(), offset, code);
+            funcinfo->addOffsetSrc(offset, filePath, fileLine, code, reg_GPR, reg_PRED, reg_UGPR, reg_UPRED);
         } else if (tempStr[2] == '-') {
 //            mangled kernel name
-            if (FI != nullptr) {
-                if (map_FuncInfos.find(FI->getFuncName()) != map_FuncInfos.end())
+            if (funcinfo != nullptr) {
+                if (map_FuncInfos.find(funcinfo->getFuncName()) != map_FuncInfos.end())
                     cout << "ERROR: Kernel Exists!" << endl;
-                map_FuncInfos.insert(pair<string, FuncInfo>(FI->getFuncName(), *FI));
-                //cout << "test: " << map_FuncInfos[FI->getFuncName()].getFuncName() << endl;
+                map_FuncInfos.insert(pair<string, FuncInfo>(funcinfo->getFuncName(), *funcinfo));
+                //cout << "test: " << map_FuncInfos[funcinfo->getFuncName()].getFuncName() << endl;
             }
             tempStr.erase(0, tempStr.find_first_of('.'));
             string kernel_str = tempStr.substr(6, tempStr.find_first_of(" ---") - 6);
-            FuncInfo *tempObj = new FuncInfo(kernel_str);
-            FI = tempObj;
+            auto *tempObj = new FuncInfo(kernel_str);
+            funcinfo = tempObj;
             filePath = "no src file";
             fileLine = "-1";
             reg_GPR_size = -1;
             reg_PRED_size = -1;
             reg_UGPR_size = -1;
             reg_UPRED_size = -1;
-            //cout << "Create: " << FI->getFuncName() << endl;
+            //cout << "Create: " << funcinfo->getFuncName() << endl;
         } else if (tempStr[1] == '/' && tempStr[2] == '#') {
             // source code file and line number
             tempStr.erase(0, tempStr.find_first_of('\"') + 1);
@@ -162,7 +162,7 @@ map<string, FuncInfo> mapOffset(string &dataPath) {
             tempStr.erase(0, tempStr.find_first_not_of(' '));
             fileLine = tempStr.substr(0, tempStr.find_first_of(' '));
 //            cout << "   Source File    Name: " << filePath << "       Line: " << fileLine << endl;
-            FI->addSrcFile(filePath);
+            funcinfo->addSrcFile(filePath);
         } else if (tempStr.find('#') != tempStr.npos && tempStr.find("// |") != tempStr.npos) {
             // count each register
             tempStr.erase(0, tempStr.find_first_of('#') + 1);
@@ -192,106 +192,70 @@ map<string, FuncInfo> mapOffset(string &dataPath) {
         }
 
     }
-    if (FI != nullptr) {
-        map_FuncInfos.insert(pair<string, FuncInfo>(FI->getFuncName(), *FI));
+    if (funcinfo != nullptr) {
+        map_FuncInfos.insert(pair<string, FuncInfo>(funcinfo->getFuncName(), *funcinfo));
     }
     myfile.close();
     fclose(fp);
     return map_FuncInfos;
 }
 
+void inline fill_reg(kernel::mapRes::FuncInfo::SASSLineInfo::Register & reg, struct SASSLineInfo& sassline){
+    reg.set_name(sassline.reg_GPR->name);
+    reg.set_size(sassline.reg_GPR->size);
+    reg.set_occupied_count(sassline.reg_GPR->occupied_count);
+    for (int i = 0; i < sassline.reg_GPR->reg_status.size(); i++) {
+        reg.add_reg_status(sassline.reg_GPR->reg_status[i]);
+    }
+}
 
 string encode(map<string, FuncInfo> map_FI) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
-
     kernel::mapRes maps;
-
     auto resMap = maps.mutable_testmap();
     for (auto iter = map_FI.begin(); iter != map_FI.end(); iter++) {
         // * Construct a FuncInfo object
-        kernel::mapRes::FuncInfo *FI_1 = maps.add_fi();
-        FI_1->set_funcname(iter->second.getFuncName());
-
-        // ** set
+        kernel::mapRes::FuncInfo *funcinfo = maps.add_fi();
+        funcinfo->set_funcname(iter->second.getFuncName());
         auto set_srcfile = iter->second.getSrcFile();
         for (auto it_src = set_srcfile.begin(); it_src != set_srcfile.end(); it_src++) {
-            FI_1->add_srcfileset(*it_src);
+            funcinfo->add_srcfileset(*it_src);
         }
-//        auto set_code = iter->second.getCodeSet();
-//        for (auto it_code = set_code.begin(); it_code != set_code.end(); it_code++) {
-//            FI_1->add_codeset(*it_code);
-//        }
-
         // map_offset_sassline
-        auto map_offset_src = FI_1->mutable_map_offset_src();
+        auto map_offset_src = funcinfo->mutable_map_offset_src();
         map<int, struct SASSLineInfo> temp_map = iter->second.getOffsetSrc();
         for (auto it_offset = temp_map.begin(); it_offset != temp_map.end(); it_offset++) {
             int offset = it_offset->first;
-            // ** construct SASSLineInfo
-            kernel::mapRes::FuncInfo::SASSLineInfo *SASSLine_1 = FI_1->add_sassline();
+            // construct SASSLineInfo
+            kernel::mapRes::FuncInfo::SASSLineInfo *SASSLine_1 = funcinfo->add_sassline();
             SASSLine_1->set_src_path(*it_offset->second.src_path);
             SASSLine_1->set_src_line(it_offset->second.src_line);
             SASSLine_1->set_code(*it_offset->second.code);
+            // construct Register
+            auto *reg_GPR = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
+            auto *reg_PRED = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
+            auto *reg_UGPR = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
+            auto *reg_UPRED = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
 
-            // *** construct Register
-            kernel::mapRes::FuncInfo::SASSLineInfo::Register *reg_GPR = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
-            kernel::mapRes::FuncInfo::SASSLineInfo::Register *reg_PRED = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
-            kernel::mapRes::FuncInfo::SASSLineInfo::Register *reg_UGPR = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
-            kernel::mapRes::FuncInfo::SASSLineInfo::Register *reg_UPRED = new kernel::mapRes::FuncInfo::SASSLineInfo::Register();
-
-            reg_GPR->set_name(it_offset->second.reg_GPR->name);
-            reg_GPR->set_size(it_offset->second.reg_GPR->size);
-            reg_GPR->set_occupied_count(it_offset->second.reg_GPR->occupied_count);
-            for (int i = 0; i < it_offset->second.reg_GPR->reg_status.size(); i++) {
-                reg_GPR->add_reg_status(it_offset->second.reg_GPR->reg_status[i]);
-            }
-
-            reg_PRED->set_name(it_offset->second.reg_PRED->name);
-            reg_PRED->set_size(it_offset->second.reg_PRED->size);
-            reg_PRED->set_occupied_count(it_offset->second.reg_PRED->occupied_count);
-            for (int i = 0; i < it_offset->second.reg_PRED->reg_status.size(); i++) {
-                reg_PRED->add_reg_status(it_offset->second.reg_PRED->reg_status[i]);
-            }
-
-            reg_UGPR->set_name(it_offset->second.reg_UGPR->name);
-            reg_UGPR->set_size(it_offset->second.reg_UGPR->size);
-            reg_UGPR->set_occupied_count(it_offset->second.reg_UGPR->occupied_count);
-            for (int i = 0; i < it_offset->second.reg_UGPR->reg_status.size(); i++) {
-                reg_GPR->add_reg_status(it_offset->second.reg_UGPR->reg_status[i]);
-            }
-
-            reg_UPRED->set_name(it_offset->second.reg_UPRED->name);
-            reg_UPRED->set_size(it_offset->second.reg_UPRED->size);
-            reg_UPRED->set_occupied_count(it_offset->second.reg_UPRED->occupied_count);
-            for (int i = 0; i < it_offset->second.reg_UPRED->reg_status.size(); i++) {
-                reg_UPRED->add_reg_status(it_offset->second.reg_UPRED->reg_status[i]);
-            }
-
-
-            // ** set SASSLineInfo's reg status
+            fill_reg(*reg_GPR, it_offset->second);
+            fill_reg(*reg_PRED, it_offset->second);
+            fill_reg(*reg_UGPR, it_offset->second);
+            fill_reg(*reg_UPRED, it_offset->second);
+            //set SASSLineInfo's reg status
             *SASSLine_1->mutable_reg_gpr() = *reg_GPR;
             *SASSLine_1->mutable_reg_pred() = *reg_PRED;
             *SASSLine_1->mutable_reg_ugpr() = *reg_UGPR;
             *SASSLine_1->mutable_reg_upred() = *reg_UPRED;
-
             // * Push SASSLineInfo into FuncInfo offset map
             (*map_offset_src)[offset] = *SASSLine_1;
         }
-
-
-
         // Push FuncInfo into maps
-        (*resMap)[FI_1->funcname()] = *FI_1;
+        (*resMap)[funcinfo->funcname()] = *funcinfo;
     }
-
-
-
-    // 对消息对象student序列化到string容器
     string serializedStr;
     maps.SerializeToString(&serializedStr);
-    //cout<<"serialization result: "<<serializedStr<<endl; //序列化后的字符串内容是二进制内容，非可打印字符，预计输出乱码
+    //cout<<"serialization result: "<<serializedStr<<endl;
     //cout<<endl<<"debugString:"<<maps.DebugString();
-
     return serializedStr;
 }
 
