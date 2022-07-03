@@ -213,7 +213,7 @@ map<string, FuncInfo> mapOffset(string &dataPath) {
     return map_FuncInfos;
 }
 
-void inline fill_reg(kernel::mapRes::FuncInfo::SASSLineInfo::Register & reg, struct SASSLineInfo& sassline){
+void inline fill_reg(kernel::mapRes::FuncInfo::SASSLineInfo::Register &reg, struct SASSLineInfo &sassline) {
     reg.set_name(sassline.reg_GPR->name);
     reg.set_size(sassline.reg_GPR->size);
     reg.set_occupied_count(sassline.reg_GPR->occupied_count);
@@ -283,7 +283,7 @@ google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string &serialized
     return deserializedMapRes.testmap();
 }
 
-ArrayType getArrayType(string& search_str){
+ArrayType getArrayType(string &search_str) {
     ArrayType array_type{};
     auto iter = std::find(AssembFunc.begin(), AssembFunc.end(), search_str);
     if (iter != AssembFunc.end()) {
@@ -343,8 +343,8 @@ void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_
             }
             sassline = iter1->second;
             reg_GPR = sassline.reg_gpr();
-            auto cur_reg_status =  reg_GPR.reg_status()[reg_write];
-            if ( cur_reg_status & REG_LOAD || cur_reg_status & REG_LOAD_STORE) {
+            auto cur_reg_status = reg_GPR.reg_status()[reg_write];
+            if (cur_reg_status & REG_LOAD || cur_reg_status & REG_LOAD_STORE) {
                 found = true;
                 break;
             }
@@ -366,7 +366,7 @@ void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_
         }
         // find when this reg is written
         bool found = false;
-        for (search_offset -= 0x10; search_offset >= 0x00; search_offset -= 0x10) { // 16 -> 0x10
+        for (search_offset -= 0x10; search_offset >= 0x00; search_offset -= 0x10) {
             auto iter1 = funcinfo.map_offset_src().find(search_offset);
             if (iter1 == funcinfo.map_offset_src().end()) {
                 cout << "ERROR: Not exists this offset" << endl;
@@ -374,7 +374,7 @@ void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_
             }
             sassline = iter1->second;
             reg_GPR = sassline.reg_gpr();
-            if (reg_GPR.reg_status()[reg_getData] & REG_STORE) { // 1 -> 写 ^, 3 -> 读+写 x
+            if (reg_GPR.reg_status()[reg_getData] & REG_STORE) {
                 found = true;
                 break;
             }

@@ -52,7 +52,6 @@ vector<string> splitCode(string &code) {
     return vec_code;
 }
 
-// 计算reg个数的辅助函数
 int regCount(string numStr) {
     stringstream input(numStr);
     string num;
@@ -72,7 +71,8 @@ bool ifContainsWide(string code) {
     return false;
 }
 
-string splitFuncType(string code) { // like "ISETP.GE.AND"
+// example "ISETP.GE.AND"
+string splitFuncType(string code) {
     stringstream sscode(code);
     string token;
     if (getline(sscode, token, '.'))

@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     ofstream OsWrite("store.txt");
     OsWrite << serializedStr;
     OsWrite.close();
-/*----------------上面是序列化，下面是反序列化-----------------------*/
+
     ifstream IsRead;
     IsRead.open("store.txt");
 

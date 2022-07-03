@@ -22,6 +22,4 @@ void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_
 
 void regUsageParse(string &str_REG, Register &reg, string &funcName, int offset, string &sass_code);
 
-//void analyzeLines(stringstream *ss);
-
 #endif //NVSASS_PARSER_PARSER_H
