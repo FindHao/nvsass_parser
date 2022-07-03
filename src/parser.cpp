@@ -259,88 +259,17 @@ string encode(map<string, FuncInfo> map_FI) {
     return serializedStr;
 }
 
-void decode(string serializedStr) {
-
-    //解析序列化后的消息对象，即反序列化
+//@TODO: do we need to change Map to std::map?
+google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string serializedStr) {
     kernel::mapRes deserializedMapRes;
     if (!deserializedMapRes.ParseFromString(serializedStr)) {
         cerr << "Failed to parse maps." << endl;
     }
-
-    cout << "-------------上面是序列化，下面是反序列化---------------" << endl;
-    //打印解析后的student消息对象
     //cout<<"deserializedStudent debugString:"<<deserializedMapRes.DebugString();
     cout << endl << "Map Results Size: " << deserializedMapRes.testmap().size() << endl;
-    auto temp_map = deserializedMapRes.testmap();
-
-
-    // transfer to map<string, FuncInfo>
-    /*
-    for (auto it_func = temp_map.begin(); it_func != temp_map.end(); it_func++) {
-        string funcName = it_func->first;
-        FuncInfo *tempFI = new FuncInfo(funcName);
-
-        // set
-        auto set_srcfile = it_func->second.srcfileset();
-        for (auto it_src = set_srcfile.begin(); it_src != set_srcfile.end(); it_src++) {
-            tempFI->addSrcFile(*it_src);
-        }
-
-        // SASSLine
-        auto map_offset = it_func->second.map_offset_src();
-        for (auto it_offset = map_offset.begin(); it_offset != map_offset.end(); it_offset++) {
-            // void FuncInfo::addOffsetSrc(int offset, string filePath, string line, string code, Register *reg_GPR, Register *reg_PRED, Register *reg_UGPR, Register *reg_UPRED)
-            int offset = it_offset->first;
-            string filePath = it_offset->second.src_path();
-            string line = to_string(it_offset->second.src_line());
-            string code = it_offset->second.code();
-            Register *reg_GPR = new Register();
-            Register *reg_PRED = new Register();
-            Register *reg_UGPR = new Register();
-            Register *reg_UPRED = new Register();
-
-            tempFI->addOffsetSrc(offset, filePath, line, code, reg_GPR, reg_PRED, reg_UGPR, reg_UPRED);
-        }
-
-        // push this FuncInfo to de_map
-        de_map.insert(pair<string, FuncInfo>(funcName, *tempFI));
-    }
-    */
-
-
-    // simple test
-    /*
-    auto it = deserializedMapRes.testmap().find("__cuda_sm20_div_f64_slowpath_v2");
-    if (it != deserializedMapRes.testmap().end()) {
-        cout << "Func Name: " << it->second.funcname() << endl;
-
-        auto it_0 = it->second.map_offset_src().find(16);
-        if (it_0 != it->second.map_offset_src().end()) {
-            cout << it_0->second.src_path() << " line: " << (int)it_0->second.src_line() << endl;
-            cout << it_0->second.code() << endl;
-            cout << it_0->second.reg_gpr().name() << " " << it_0->second.reg_gpr().reg_status()[1] << endl;
-            cout << it_0->second.reg_gpr().name() << " " << it_0->second.reg_gpr().size() << endl;
-        }
-    }
-    */
-
-    searchOffset_protobuf(temp_map["_ZN3cub11EmptyKernelIvEEvv"], 0);
-    searchOffset_protobuf(
-            temp_map["_ZN5amrex13launch_globalILi256EZNS_11ParallelForIiZNS_7BaseFabIiE6setValILNS_5RunOnE1EEEvRKiRKNS_3BoxENS_8DestCompENS_8NumCompsEEUliiiiE_vEENSt9enable_ifIXsr5amrex19MaybeDeviceRunnableIT0_vEE5valueEvE4typeERKNS_3Gpu10KernelInfoESA_T_OSF_EUlvE_EEvSF_"],
-            64);
-    searchOffset_protobuf(
-            temp_map["_ZN5amrex13launch_globalILi256EZNS_11ParallelForIiZNS_7BaseFabIiE6setValILNS_5RunOnE1EEEvRKiRKNS_3BoxENS_8DestCompENS_8NumCompsEEUliiiiE_vEENSt9enable_ifIXsr5amrex19MaybeDeviceRunnableIT0_vEE5valueEvE4typeERKNS_3Gpu10KernelInfoESA_T_OSF_EUlvE_EEvSF_"],
-            144);
-    searchOffset_protobuf(
-            temp_map["_ZN5amrex13launch_globalILi256EZNS_11ParallelForIiZNS_7BaseFabIiE6setValILNS_5RunOnE1EEEvRKiRKNS_3BoxENS_8DestCompENS_8NumCompsEEUliiiiE_vEENSt9enable_ifIXsr5amrex19MaybeDeviceRunnableIT0_vEE5valueEvE4typeERKNS_3Gpu10KernelInfoESA_T_OSF_EUlvE_EEvSF_"],
-            240);
-
-
-    google::protobuf::ShutdownProtobufLibrary();
-
+    return deserializedMapRes.testmap();
 }
 
-// 参数 offset, kernel name
 void searchOffset_protobuf(kernel::mapRes::FuncInfo FI, int search_offset) {
     DataType resType;
     kernel::mapRes::FuncInfo::SASSLineInfo SI;

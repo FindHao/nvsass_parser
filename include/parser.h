@@ -15,7 +15,7 @@ void init(string &path);
 
 map<string, FuncInfo> mapOffset(string &dataPath);
 
-void decode(string serializedStr);
+google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string serializedStr);
 
 string encode(map<string, FuncInfo> map_FI);
 
