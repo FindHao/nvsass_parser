@@ -308,7 +308,7 @@ ArrayType getArrayType(string &search_str) {
 }
 
 // @TODO: add return value
-void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset) {
+ArrayType searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset) {
     ArrayType resType{};
     kernel::mapRes::FuncInfo::SASSLineInfo sassline;
     auto iter = funcinfo.map_offset_src().find(search_offset);
@@ -397,6 +397,7 @@ void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_
     } else {
         cout << "Not LD/LDG/ST/STG" << endl;
     }
+    return resType;
 }
 
 

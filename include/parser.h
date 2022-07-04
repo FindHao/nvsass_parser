@@ -18,7 +18,7 @@ google::protobuf::Map<string, kernel::mapRes_FuncInfo> decode(string &serialized
 
 string encode(map<string, FuncInfo> map_FI);
 
-void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset);
+ArrayType searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_offset);
 
 void regUsageParse(string &str_REG, Register &reg, string &funcName, int offset, string &sass_code);
 
