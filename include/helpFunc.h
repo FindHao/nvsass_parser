@@ -24,6 +24,7 @@ const vector<string> AssembFunc = {
         "IMADSP",
         "IMUL",
         "IADD",
+        "IADD3",
         "ISCADD",
         "ISAD",
         "IMNMX",
@@ -38,6 +39,8 @@ const vector<string> AssembFunc = {
         "ISETP",
         "ICMP",
         "POPC",
+        "LEA",
+        "ISCADD",
         "INT_END",
 //      the following are FP32 instructions
         "FFMA",

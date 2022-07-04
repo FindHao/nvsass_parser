@@ -346,8 +346,15 @@ void searchOffset_protobuf(const kernel::mapRes::FuncInfo &funcinfo, int search_
             reg_GPR = sassline.reg_gpr();
             auto cur_reg_status = reg_GPR.reg_status()[reg_write];
             if (cur_reg_status & REG_LOAD || cur_reg_status & REG_LOAD_STORE) {
-                found = true;
-                break;
+                vector<string> cur_code = splitCode(code);
+                if (cur_code[0] == "MOV") {
+                    // R6 in  MOV R6, R2
+                    get_reg = vec_code[1];
+                    reg_write = atoi(get_reg.substr(1).c_str());
+                } else {
+                    found = true;
+                    break;
+                }
             }
         }
         if (!found) {
