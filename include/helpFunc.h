@@ -52,6 +52,7 @@ const vector<string> AssembFunc = {
         "FSET",
         "FSETP",
         "FCHK",
+        "FSEL",
         "RRO",
         "FP32_END",
 //      the following are FP64 instructions
