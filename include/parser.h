@@ -10,7 +10,7 @@
 
 extern map<string, FuncInfo> map_FuncInfos;
 
-void init(string &path);
+void parser_init(string &path);
 
 map<string, FuncInfo> mapOffset(string &dataPath);
 

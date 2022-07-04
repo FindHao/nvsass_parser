@@ -9,6 +9,7 @@ using std::endl;
 using std::pair;
 using std::cerr;
 
+
 map<string, FuncInfo> map_FuncInfos;
 
 //The reference positions for the instructions in helpFunc.h
@@ -16,7 +17,7 @@ int FP32_END;
 int FP64_END;
 int INT_END;
 
-void init(string &path) {
+void parser_init(string &path) {
     map_FuncInfos = mapOffset(path);
     INT_END = find(AssembFunc.begin(), AssembFunc.end(), "INT_END") - AssembFunc.begin();
     FP32_END = find(AssembFunc.begin(), AssembFunc.end(), "FP32_END") - AssembFunc.begin();
